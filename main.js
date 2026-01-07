@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 
 // 1. SETUP THE SCENE
 const scene = new THREE.Scene();
@@ -37,22 +39,26 @@ scene.add(directionalLight);
 
 // --- ADDING OBJECTS ---
 
-// 1. The Floor
-const planeGeometry = new THREE.PlaneGeometry(15, 15);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-plane.rotation.x = -Math.PI / 2;
-plane.receiveShadow = true;
-scene.add(plane);
+// --- LOAD THE ROOM MODEL ---
+const loader = new GLTFLoader();
+let roomMesh; // We create a variable so we can access the room later
 
-// 2. A Cube
-const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-const boxMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-const box = new THREE.Mesh(boxGeometry, boxMaterial);
-box.position.set(0, 1, 0);
-box.castShadow = true;
-box.name = "myInteractiveBox";
-scene.add(box);
+loader.load(
+  'room.glb', // Make sure this matches your file name exactly!
+  function (gltf) {
+    roomMesh = gltf.scene;
+    
+    // Adjust these if your model is too big/small or too high/low
+    roomMesh.scale.set(1, 1, 1); 
+    roomMesh.position.set(0, 0, 0);
+
+    scene.add(roomMesh);
+  },
+  undefined, // Progress (leave blank)
+  function (error) {
+    console.error('An error happened:', error);
+  }
+);
 
 
 // --- INTERACTIVITY (Raycaster) ---
@@ -73,31 +79,8 @@ function animate() {
   
   controls.update();
 
-  // Raycasting logic
-  raycaster.setFromCamera( pointer, camera );
-  const intersects = raycaster.intersectObjects( scene.children );
-
-  // 1. Reset object to original state (clean up previous frame)
-  if(box.material.color.getHex() !== 0x00ff00) {
-      box.material.color.set(0x00ff00);
-  }
-
-  // 2. Check for intersections
-  let isHoveringBox = false; // Track if we found the box
-
-  for ( let i = 0; i < intersects.length; i ++ ) {
-      if(intersects[i].object.name === "myInteractiveBox") {
-          intersects[i].object.material.color.set(0xff0000); // Red on hover
-          isHoveringBox = true;
-      }
-  }
-  
-  // 3. Update cursor based on flag
-  if(isHoveringBox) {
-      document.body.style.cursor = "pointer";
-  } else {
-      document.body.style.cursor = "default";
-  }
+  // We will add the raycaster (interaction) back later once the model works!
+  // For now, we just want to see the room.
 
   renderer.render(scene, camera);
 }
